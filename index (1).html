@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>💰 Finanzas Compartidas</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:16px}
+    @media (max-width:768px){html{font-size:18px}}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 100%);color:#fff;min-height:100vh;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+    header{background:linear-gradient(90deg,#ff6b6b,#ffd93d,#4ecdc4,#6c5ce7);padding:3.5rem 1.5rem;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    header h1{font-size:3rem;margin-bottom:1.2rem;font-weight:900}
+    header p{font-size:1.15rem}
+    @media (max-width:768px){header{padding:4rem 1.5rem}header h1{font-size:3.4rem;margin-bottom:1rem}header p{font-size:1.2rem}}
+    .container{max-width:100%;margin:2rem 1.5rem;padding:0}
+    @media (max-width:768px){.container{margin:2.5rem 1.5rem}}
+    .mes-selector{background:#1a1a2e;border:3px solid #4ecdc4;border-radius:12px;padding:2.4rem;margin-bottom:2.5rem}
+    #mesActual{width:100%;padding:1.6rem 1.2rem;font-size:1.1rem;margin-bottom:2rem;background:#0f0f1e;border:2px solid #444;border-radius:8px;color:#fff;min-height:62px}
+    @media (max-width:768px){.mes-selector{padding:2.6rem}.mes-selector label{font-size:1.25rem}#mesActual{padding:1.8rem 1.2rem;font-size:1.15rem;min-height:68px;margin-bottom:2.2rem}}
+    .tabs{display:flex;gap:0.6rem;border-bottom:4px solid #1a1a2e;margin-bottom:2rem;overflow-x:auto;padding:1rem 0 1.5rem;scroll-behavior:smooth}
+    .tabs button{padding:1.6rem 1rem;background:0;border:none;color:#888;cursor:pointer;font-size:0.9rem;font-weight:bold;border-bottom:4px solid transparent;transition:all .3s;white-space:nowrap;min-height:70px;line-height:1.1}
+    @media (max-width:768px){.tabs button{padding:1.8rem 0.8rem;font-size:0.85rem;min-height:76px}}
+    .tabs button.active{color:#fff;background:rgba(78,205,196,.2);border-bottom-color:#4ecdc4;border-radius:8px 8px 0 0}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    .card{background:#1a1a2e;border:2px solid #444;border-radius:12px;padding:2.2rem 1.8rem;margin-bottom:2.5rem}
+    .card h3{color:#4ecdc4;margin-bottom:2rem;font-size:2.1rem}
+    .form-group{margin-bottom:1.8rem}
+    @media (max-width:768px){.card{padding:2.4rem 1.8rem;margin-bottom:2.5rem}.card h3{font-size:2.2rem;margin-bottom:2.2rem}.form-group{margin-bottom:2rem}}
+    label{display:block;margin-bottom:1.2rem;font-weight:600;color:#fff;font-size:1.15rem;letter-spacing:0.3px}
+    @media (max-width:768px){label{font-size:1.2rem;margin-bottom:1.3rem}}
+    input[type="text"],input[type="number"],select{width:100%;padding:1.5rem 1.2rem;background:#0f0f1e;border:2px solid #444;border-radius:8px;color:#fff;font-size:1.05rem;transition:border-color .3s;min-height:60px;-webkit-appearance:none;appearance:none}
+    @media (max-width:768px){input[type="text"],input[type="number"],select{padding:1.8rem 1.2rem;font-size:1.1rem;min-height:66px}}
+    input[type="text"]:focus,input[type="number"]:focus,select:focus{outline:0;border-color:#4ecdc4;background:#111}
+    .checkbox-label{display:flex;align-items:center;cursor:pointer;font-size:1.15rem;margin-bottom:1.8rem;min-height:48px;padding:0.5rem}
+    input[type="checkbox"]{width:28px;height:28px;margin-right:1.2rem;cursor:pointer}
+    @media (max-width:768px){.checkbox-label{font-size:1.2rem;min-height:52px;margin-bottom:2rem}input[type="checkbox"]{width:32px;height:32px;margin-right:1.4rem}}
+    .btn{padding:1.6rem 2rem;border:none;border-radius:8px;font-weight:bold;cursor:pointer;transition:all .3s;font-size:1.1rem;min-height:64px;width:100%;display:flex;align-items:center;justify-content:center}
+    @media (max-width:768px){.btn{padding:1.8rem 2rem;min-height:72px;font-size:1.15rem}}
+    .btn-primary{background:linear-gradient(135deg,#ff6b6b,#ff8787);color:#fff;box-shadow:0 4px 15px rgba(255,107,107,.3)}
+    .btn-primary:active{transform:scale(0.98)}
+    .btn-secondary{background:#444;color:#fff}
+    .btn-danger{background:#e74c3c;color:#fff;padding:1.1rem 1.3rem;font-size:1.05rem;width:auto;min-height:52px;white-space:nowrap}
+    .btn-edit{background:#f39c12;color:#fff;padding:1.1rem 1.3rem;font-size:1.05rem;width:auto;margin-right:1rem;min-height:52px;white-space:nowrap}
+    @media (max-width:768px){.btn-danger{padding:1.3rem 1.5rem;font-size:1.1rem;min-height:56px}.btn-edit{padding:1.3rem 1.5rem;font-size:1.1rem;min-height:56px}}
+    .grid{display:grid;grid-template-columns:1fr;gap:1.5rem;margin-bottom:2rem}
+    .stat-card{background:linear-gradient(135deg,#ff6b6b,#ff8787);padding:2rem;border-radius:12px;text-align:center;color:#fff}
+    .stat-card.green{background:linear-gradient(135deg,#00b894,#00d084)}
+    .stat-card.blue{background:linear-gradient(135deg,#0984e3,#74b9ff)}
+    .stat-card.purple{background:linear-gradient(135deg,#6c5ce7,#a29bfe)}
+    .stat-card h4{font-size:1.05rem;opacity:.9;margin-bottom:1.2rem}
+    .stat-card .amount{font-size:2.6rem;font-weight:bold}
+    @media (max-width:768px){.stat-card{padding:2.2rem}.stat-card h4{font-size:1.1rem}.stat-card .amount{font-size:2.8rem}}
+    .list-item{background:#0f0f1e;padding:1.8rem;border-radius:8px;margin-bottom:1.2rem;border-left:5px solid #4ecdc4}
+    .list-item-info{margin-bottom:1.2rem}
+    .list-item-info h4{font-size:1.3rem;margin-bottom:0.6rem;font-weight:600}
+    .list-item-info p{font-size:1.05rem;color:#aaa;line-height:1.4}
+    @media (max-width:768px){.list-item{padding:2rem;margin-bottom:1.4rem}.list-item-info h4{font-size:1.35rem}.list-item-info p{font-size:1.1rem}}
+    .list-item-actions{display:flex;gap:1rem;flex-wrap:wrap}
+    .status-badge{display:inline-block;padding:0.4rem 1rem;border-radius:4px;font-size:0.95rem;font-weight:bold;margin-left:0.5rem}
+    .status-done{background:rgba(0,184,148,.3);color:#00b894}
+    .status-pending{background:rgba(230,126,34,.3);color:#e67e22}
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:2rem}
+    .modal.active{display:flex}
+    .modal-content{background:#1a1a2e;padding:2.8rem;border-radius:12px;width:100%;max-width:500px;border:2px solid #4ecdc4;max-height:90vh;overflow-y:auto}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2.4rem}
+    .modal-header h2{color:#4ecdc4;font-size:1.9rem;font-weight:700}
+    @media (max-width:768px){.modal-content{padding:3rem}.modal-header{margin-bottom:2.6rem}.modal-header h2{font-size:2rem}}
+    .close-btn{background:0;border:none;color:#999;font-size:2rem;cursor:pointer;width:50px;height:50px}
+    .toast{position:fixed;top:2rem;right:1rem;padding:1.5rem 2rem;border-radius:8px;color:#fff;font-weight:bold;font-size:1.1rem;z-index:2000;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+    .toast.success{background:#00b894}
+    .toast.error{background:#e74c3c}
+    .empty-state{text-align:center;padding:3.5rem 1rem;color:#999}
+    .empty-state p{font-size:1.25rem;margin-bottom:1.2rem}
+    @media (max-width:768px){.empty-state{padding:4rem 1.5rem}.empty-state p{font-size:1.3rem;margin-bottom:1.5rem}}
+    .loading{text-align:center;padding:2rem;color:#4ecdc4;font-size:1.2rem}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💰 Finanzas</h1>
+  <p>Compartido en tiempo real</p>
+</header>
+
+<div class="container">
+  <div class="mes-selector">
+    <label for="mesActual" style="font-size:1.2rem;margin-bottom:1rem">Mes Actual:</label>
+    <input type="text" id="mesActual" placeholder="AGOSTO 2026">
+    <button class="btn btn-primary" onclick="cargarDatos()" style="margin-top:1rem">Cargar</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="cambiarTab('resumen')">📊 Resumen</button>
+    <button class="tab-btn" onclick="cambiarTab('ingresos')">📈 Ingresos</button>
+    <button class="tab-btn" onclick="cambiarTab('gastos')">📉 Gastos</button>
+    <button class="tab-btn" onclick="cambiarTab('categorias')">📂 Categ.</button>
+    <button class="tab-btn" onclick="cambiarTab('tarjetas')">💳 Tarjetas</button>
+    <button class="tab-btn" onclick="cambiarTab('balance')">⚖️ Balance</button>
+  </div>
+
+  <div id="resumen" class="tab-content active"><div class="grid" id="resumenGrid"></div></div>
+
+  <div id="ingresos" class="tab-content">
+    <div class="card"><h3>➕ Agregar Ingreso</h3>
+      <div class="form-group"><label>Concepto:</label><input type="text" id="ingConcepto" placeholder="Ej: Sueldo"></div>
+      <div class="form-group"><label>Monto:</label><input type="number" id="ingMonto" placeholder="0" step="0.01"></div>
+      <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="ingCobrado" checked><span>✅ Cobré</span></label></div>
+      <button class="btn btn-primary" onclick="agregarIngreso()">Agregar</button>
+    </div>
+    <div class="card"><h3>Mis Ingresos</h3><div id="ingresosList"></div></div>
+  </div>
+
+  <div id="gastos" class="tab-content">
+    <div class="card"><h3>➕ Agregar Gasto</h3>
+      <div class="form-group"><label>Concepto:</label><input type="text" id="gasConcepto" placeholder="Ej: Mercado"></div>
+      <div class="form-group"><label>Categoría:</label><select id="gasCategoria"><option value="">Seleccionar...</option></select></div>
+      <div class="form-group"><label>Monto:</label><input type="number" id="gasMonto" placeholder="0" step="0.01"></div>
+      <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="gasPagado" checked><span>✅ Pagué</span></label></div>
+      <button class="btn btn-primary" onclick="agregarGasto()">Agregar</button>
+    </div>
+    <div class="card"><h3>Mis Gastos</h3><div id="gastosList"></div></div>
+  </div>
+
+  <div id="categorias" class="tab-content">
+    <div class="card"><h3>➕ Crear Categoría</h3>
+      <div class="form-group"><label>Nombre:</label><input type="text" id="catNombre" placeholder="Ej: Comida"></div>
+      <button class="btn btn-primary" onclick="agregarCategoria()">Crear</button>
+    </div>
+    <div class="card"><h3>Categorías Activas</h3><div id="categoriasList"></div></div>
+  </div>
+
+  <div id="tarjetas" class="tab-content">
+    <div class="card"><h3>➕ Crear Tarjeta</h3>
+      <div class="form-group"><label>Nombre:</label><input type="text" id="tarNombre" placeholder="Ej: Visa"></div>
+      <div class="form-group"><label>Banco:</label><input type="text" id="tarBanco" placeholder="BNA"></div>
+      <div class="form-group"><label>Tipo:</label><select id="tarTipo"><option value="visa">Visa</option><option value="mastercard">MasterCard</option><option value="amex">AmEx</option></select></div>
+      <div class="form-group"><label>Día Cierre:</label><input type="number" id="tarCierre" placeholder="15" min="1" max="31"></div>
+      <button class="btn btn-primary" onclick="agregarTarjeta()">Crear</button>
+    </div>
+    <div class="card"><h3>Mis Tarjetas</h3><div id="tarjetasList"></div></div>
+  </div>
+
+  <div id="balance" class="tab-content">
+    <div class="grid" id="balanceGrid"></div>
+    <div class="card"><h3>📊 Fórmulas</h3>
+      <div style="background:#0f0f1e;padding:1.5rem;border-radius:8px;font-family:monospace;font-size:1rem;line-height:2">
+        <p><span style="color:#4ecdc4">L47</span> = <span style="color:#00b894;font-weight:bold" id="f47">$0</span></p>
+        <p><span style="color:#4ecdc4">L48</span> = <span style="color:#e67e22;font-weight:bold" id="f48">$0</span></p>
+        <p><span style="color:#4ecdc4">L49</span> = <span style="color:#e74c3c;font-weight:bold" id="f49">$0</span></p>
+        <p><span style="color:#4ecdc4">L50</span> = <span style="color:#d35400;font-weight:bold" id="f50">$0</span></p>
+        <p><span style="color:#4ecdc4">M4</span> = <span style="color:#0984e3;font-weight:bold" id="f4">$0</span></p>
+        <hr style="border:1px solid #444;margin:1.5rem 0">
+        <p><span style="color:#ffd93d;font-weight:bold">L52</span> = <span style="color:#6c5ce7;font-weight:bold;font-size:1.3rem" id="f52">$0</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h2 id="modalTitle">Editar</h2><button class="close-btn" onclick="cerrarModal()">&times;</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ⚠️ CAMBIAR ESTO CON TU SCRIPT ID ⚠️
+const SCRIPT_ID = 'AKfycbz7tPq7V8ygibl9VCS1UwJ04jD_8lJxjNdQMMeBWZ-hZNgh3XE041zEOhhJbCa5_RnO';
+const API_URL = `https://script.google.com/macros/s/AKfycbz7tPq7V8ygibl9VCS1UwJ04jD_8lJxjNdQMMeBWZ-hZNgh3XE041zEOhhJbCa5_RnO/exec`;
+
+let datos = { ingresos: [], gastos: [], categorias: [], tarjetas: [], balance: {} };
+let editandoId = null;
+let editandoTipo = null;
+
+async function llamarAPI(action, params = {}) {
+  try {
+    const formData = new FormData();
+    formData.append('action', action);
+    Object.entries(params).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarToast('Error de conexión', 'error');
+    return null;
+  }
+}
+
+async function cargarDatos() {
+  const resultado = await llamarAPI('getDatos');
+  if (resultado) {
+    datos = resultado;
+    renderizarResumen();
+    renderizarIngresos();
+    renderizarGastos();
+    renderizarCategorias();
+    renderizarTarjetas();
+    renderizarBalance();
+    mostrarToast('✅ Datos cargados', 'success');
+  }
+}
+
+function renderizarResumen() {
+  const { L47, L48, L49, L50, M4, L52 } = datos.balance;
+  const html = `
+    <div class="stat-card green"><h4>Ingresos</h4><div class="amount">${formatMoney(L47 + L48)}</div></div>
+    <div class="stat-card"><h4>Gastos</h4><div class="amount">${formatMoney(L49 + L50)}</div></div>
+    <div class="stat-card blue"><h4>Tarjetas</h4><div class="amount">${formatMoney(M4)}</div></div>
+    <div class="stat-card purple"><h4>💰 NOS QUEDA</h4><div class="amount">${formatMoney(L52)}</div></div>
+  `;
+  document.getElementById('resumenGrid').innerHTML = html;
+}
+
+function renderizarIngresos() {
+  const categoriaOptions = datos.categorias.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  document.getElementById('gasCategoria').innerHTML = '<option value="">Seleccionar...</option>' + categoriaOptions;
+
+  let html = datos.ingresos.length === 0 ? '<div class="empty-state"><p>Sin ingresos</p></div>' : '';
+  datos.ingresos.forEach(ing => {
+    html += `<div class="list-item"><div class="list-item-info"><h4>${ing.concepto}</h4><p>${formatMoney(ing.monto)} <span class="status-badge ${ing.cobrado ? 'status-done' : 'status-pending'}">${ing.cobrado ? '✅' : '❌'}</span></p></div><div class="list-item-actions"><button class="btn btn-edit" onclick="editarIngreso('${ing.id}')">✏️</button><button class="btn btn-danger" onclick="eliminarIngreso('${ing.id}')">🗑️</button></div></div>`;
+  });
+  document.getElementById('ingresosList').innerHTML = html;
+}
+
+function renderizarGastos() {
+  let html = datos.gastos.length === 0 ? '<div class="empty-state"><p>Sin gastos</p></div>' : '';
+  datos.gastos.forEach(gas => {
+    html += `<div class="list-item"><div class="list-item-info"><h4>${gas.concepto}</h4><p>${gas.categoria} • ${formatMoney(gas.monto)} <span class="status-badge ${gas.pagado ? 'status-done' : 'status-pending'}">${gas.pagado ? '✅' : '❌'}</span></p></div><div class="list-item-actions"><button class="btn btn-edit" onclick="editarGasto('${gas.id}')">✏️</button><button class="btn btn-danger" onclick="eliminarGasto('${gas.id}')">🗑️</button></div></div>`;
+  });
+  document.getElementById('gastosList').innerHTML = html;
+}
+
+function renderizarCategorias() {
+  let html = datos.categorias.length === 0 ? '<div class="empty-state"><p>Sin categorías</p></div>' : '';
+  datos.categorias.forEach(cat => {
+    html += `<div class="list-item"><div class="list-item-info"><h4>${cat.nombre}</h4></div><div class="list-item-actions"><button class="btn btn-danger" onclick="eliminarCategoria('${cat.id}')">🗑️</button></div></div>`;
+  });
+  document.getElementById('categoriasList').innerHTML = html;
+}
+
+function renderizarTarjetas() {
+  let html = datos.tarjetas.length === 0 ? '<div class="empty-state"><p>Sin tarjetas</p></div>' : '';
+  datos.tarjetas.forEach(tar => {
+    html += `<div class="list-item"><div class="list-item-info"><h4>${tar.nombre}</h4><p>${tar.banco} • ${tar.tipo.toUpperCase()} • Cierre: ${tar.cierre}</p></div><div class="list-item-actions"><button class="btn btn-danger" onclick="eliminarTarjeta('${tar.id}')">🗑️</button></div></div>`;
+  });
+  document.getElementById('tarjetasList').innerHTML = html;
+}
+
+function renderizarBalance() {
+  const { L47, L48, L49, L50, M4, L52 } = datos.balance;
+  document.getElementById('f47').textContent = formatMoney(L47);
+  document.getElementById('f48').textContent = formatMoney(L48);
+  document.getElementById('f49').textContent = formatMoney(L49);
+  document.getElementById('f50').textContent = formatMoney(L50);
+  document.getElementById('f4').textContent = formatMoney(M4);
+  document.getElementById('f52').textContent = formatMoney(L52);
+
+  const html = `
+    <div class="stat-card green"><h4>Ingresos Cobrados (L47)</h4><div class="amount">${formatMoney(L47)}</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#e67e22,#e59866)"><h4>NO Cobrados (L48)</h4><div class="amount">${formatMoney(L48)}</div></div>
+    <div class="stat-card"><h4>Gastos Pagados (L49)</h4><div class="amount">${formatMoney(L49)}</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#d35400,#ca6f1e)"><h4>NO Pagados (L50)</h4><div class="amount">${formatMoney(L50)}</div></div>
+    <div class="stat-card blue"><h4>Tarjetas (M4)</h4><div class="amount">${formatMoney(M4)}</div></div>
+    <div class="stat-card purple"><h4>💰 NOS QUEDA (L52)</h4><div class="amount">${formatMoney(L52)}</div></div>
+  `;
+  document.getElementById('balanceGrid').innerHTML = html;
+}
+
+async function agregarIngreso() {
+  const concepto = document.getElementById('ingConcepto').value;
+  const monto = parseFloat(document.getElementById('ingMonto').value) || 0;
+  const cobrado = document.getElementById('ingCobrado').checked;
+
+  if (!concepto.trim() || monto <= 0) {
+    mostrarToast('Completa campos', 'error');
+    return;
+  }
+
+  await llamarAPI('agregarIngreso', { concepto, monto, cobrado });
+  document.getElementById('ingConcepto').value = '';
+  document.getElementById('ingMonto').value = '';
+  document.getElementById('ingCobrado').checked = true;
+  cargarDatos();
+  mostrarToast('✅ Agregado', 'success');
+}
+
+function editarIngreso(id) {
+  const ing = datos.ingresos.find(i => i.id === id);
+  editandoId = id;
+  editandoTipo = 'ingreso';
+
+  const html = `
+    <div class="form-group"><label>Concepto:</label><input type="text" id="editConcepto" value="${ing.concepto}"></div>
+    <div class="form-group"><label>Monto:</label><input type="number" id="editMonto" value="${ing.monto}" step="0.01"></div>
+    <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="editCobrado" ${ing.cobrado ? 'checked' : ''}><span>✅ Cobré</span></label></div>
+    <div style="display:flex;gap:1rem"><button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicion()">Guardar</button></div>
+  `;
+
+  document.getElementById('modalTitle').textContent = 'Editar Ingreso';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+}
+
+async function eliminarIngreso(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await llamarAPI('eliminarIngreso', { id });
+  cargarDatos();
+  mostrarToast('✅ Eliminado', 'success');
+}
+
+async function agregarGasto() {
+  const concepto = document.getElementById('gasConcepto').value;
+  const categoria = document.getElementById('gasCategoria').value;
+  const monto = parseFloat(document.getElementById('gasMonto').value) || 0;
+  const pagado = document.getElementById('gasPagado').checked;
+
+  if (!concepto.trim() || !categoria || monto <= 0) {
+    mostrarToast('Completa campos', 'error');
+    return;
+  }
+
+  await llamarAPI('agregarGasto', { concepto, monto, pagado, categoria });
+  document.getElementById('gasConcepto').value = '';
+  document.getElementById('gasCategoria').value = '';
+  document.getElementById('gasMonto').value = '';
+  document.getElementById('gasPagado').checked = true;
+  cargarDatos();
+  mostrarToast('✅ Agregado', 'success');
+}
+
+function editarGasto(id) {
+  const gas = datos.gastos.find(g => g.id === id);
+  editandoId = id;
+  editandoTipo = 'gasto';
+
+  const categoriaOptions = datos.categorias.map(c => `<option value="${c.nombre}" ${c.nombre === gas.categoria ? 'selected' : ''}>${c.nombre}</option>`).join('');
+
+  const html = `
+    <div class="form-group"><label>Concepto:</label><input type="text" id="editConcepto" value="${gas.concepto}"></div>
+    <div class="form-group"><label>Categoría:</label><select id="editCategoria">${categoriaOptions}</select></div>
+    <div class="form-group"><label>Monto:</label><input type="number" id="editMonto" value="${gas.monto}" step="0.01"></div>
+    <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="editPagado" ${gas.pagado ? 'checked' : ''}><span>✅ Pagué</span></label></div>
+    <div style="display:flex;gap:1rem"><button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicion()">Guardar</button></div>
+  `;
+
+  document.getElementById('modalTitle').textContent = 'Editar Gasto';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+}
+
+async function eliminarGasto(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await llamarAPI('eliminarGasto', { id });
+  cargarDatos();
+  mostrarToast('✅ Eliminado', 'success');
+}
+
+async function guardarEdicion() {
+  if (editandoTipo === 'ingreso') {
+    const concepto = document.getElementById('editConcepto').value;
+    const monto = parseFloat(document.getElementById('editMonto').value) || 0;
+    const cobrado = document.getElementById('editCobrado').checked;
+    await llamarAPI('actualizarIngreso', { id: editandoId, concepto, monto, cobrado });
+  } else if (editandoTipo === 'gasto') {
+    const concepto = document.getElementById('editConcepto').value;
+    const categoria = document.getElementById('editCategoria').value;
+    const monto = parseFloat(document.getElementById('editMonto').value) || 0;
+    const pagado = document.getElementById('editPagado').checked;
+    await llamarAPI('actualizarGasto', { id: editandoId, concepto, monto, pagado, categoria });
+  }
+  cerrarModal();
+  cargarDatos();
+  mostrarToast('✅ Actualizado', 'success');
+}
+
+async function agregarCategoria() {
+  const nombre = document.getElementById('catNombre').value;
+  if (!nombre.trim()) {
+    mostrarToast('Ingresa nombre', 'error');
+    return;
+  }
+  if (datos.categorias.some(c => c.nombre === nombre)) {
+    mostrarToast('Existe', 'error');
+    return;
+  }
+  await llamarAPI('agregarCategoria', { nombre });
+  document.getElementById('catNombre').value = '';
+  cargarDatos();
+  mostrarToast('✅ Creada', 'success');
+}
+
+async function eliminarCategoria(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await llamarAPI('eliminarCategoria', { id });
+  cargarDatos();
+  mostrarToast('✅ Eliminada', 'success');
+}
+
+async function agregarTarjeta() {
+  const nombre = document.getElementById('tarNombre').value;
+  const banco = document.getElementById('tarBanco').value;
+  const tipo = document.getElementById('tarTipo').value;
+  const cierre = parseInt(document.getElementById('tarCierre').value) || 0;
+
+  if (!nombre.trim() || !banco.trim() || cierre <= 0) {
+    mostrarToast('Completa campos', 'error');
+    return;
+  }
+
+  await llamarAPI('agregarTarjeta', { nombre, banco, tipo, cierre });
+  document.getElementById('tarNombre').value = '';
+  document.getElementById('tarBanco').value = '';
+  document.getElementById('tarTipo').value = 'visa';
+  document.getElementById('tarCierre').value = '';
+  cargarDatos();
+  mostrarToast('✅ Creada', 'success');
+}
+
+async function eliminarTarjeta(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await llamarAPI('eliminarTarjeta', { id });
+  cargarDatos();
+  mostrarToast('✅ Eliminada', 'success');
+}
+
+function formatMoney(valor) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
+}
+
+function cambiarTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function cerrarModal() {
+  document.getElementById('modal').classList.remove('active');
+  editandoId = null;
+  editandoTipo = null;
+}
+
+function mostrarToast(mensaje, tipo) {
+  const toast = document.getElementById('toast');
+  toast.textContent = mensaje;
+  toast.className = `toast ${tipo}`;
+  setTimeout(() => {
+    toast.className = 'toast';
+  }, 3000);
+}
+
+// Verificar si está configurado el SCRIPT_ID
+if (SCRIPT_ID === 'TU_SCRIPT_ID_AQUI') {
+  document.body.innerHTML = '<div class="container" style="margin-top:5rem;text-align:center"><div class="card"><h3>⚠️ Falta configurar</h3><p style="font-size:1.2rem;margin:2rem 0">Abre el HTML en un editor y reemplaza:<br><br><code style="background:#0f0f1e;padding:1rem;border-radius:8px;display:block;margin:1rem 0">const SCRIPT_ID = \'TU_SCRIPT_ID_AQUI\'</code><br><br>Con tu Script ID de Google Apps Script</p></div></div>';
+}
+</script>
+
+</body>
+</html>

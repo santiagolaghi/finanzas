@@ -77,6 +77,27 @@ button{cursor:pointer}
 @media(max-width:720px){
   :root{--sidebar:0px}
   .sidebar{display:none}.main{margin-left:0}.topbar{height:64px;padding:0 16px}.top-title h1{font-size:17px}.top-title p{display:none}.content{padding:18px 14px 90px}.stats{grid-template-columns:1fr 1fr;gap:10px}.stat{padding:14px}.stat .value{font-size:19px}.dashboard-grid{gap:10px}.card-head{padding:15px}.card-body{padding:15px}.form-grid,.form-grid.three{grid-template-columns:1fr}.checkbox{padding-top:0}.bottom-nav{display:grid;position:fixed;bottom:0;left:0;right:0;height:66px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line);grid-template-columns:repeat(5,1fr);z-index:40;padding-bottom:env(safe-area-inset-bottom)}.bottom-nav button{border:0;background:transparent;color:var(--muted);font-size:10px;font-weight:700}.bottom-nav button.active{color:var(--primary)}.bottom-nav span{display:block;font-size:18px;margin-bottom:2px}.mobile-only{display:block}.desktop-only{display:none}.toolbar{align-items:stretch}.search{max-width:none}.table th:nth-child(4),.table td:nth-child(4){display:none}}
+
+.landing-mode .sidebar,.landing-mode .bottom-nav,.landing-mode .topbar{display:none}
+.landing-mode .main{margin-left:0}
+.landing{min-height:calc(100vh - 80px);display:grid;place-items:center;padding:40px 18px}
+.landing-inner{width:min(980px,100%)}
+.landing-brand{display:flex;align-items:center;gap:12px;margin-bottom:34px}
+.landing-brand .brand-mark{width:44px;height:44px;border-radius:13px}
+.landing-title{font-size:clamp(30px,5vw,48px);letter-spacing:-1.5px;margin:0}
+.landing-sub{font-size:15px;color:var(--muted);margin:8px 0 0}
+.month-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:22px}
+.month-card{padding:20px;border:1px solid var(--line);background:var(--surface);border-radius:16px;box-shadow:var(--shadow);text-align:left;transition:.18s transform,.18s border-color}
+.month-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--primary) 50%,var(--line))}
+.month-card .month-icon{width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary);display:grid;place-items:center;font-size:19px;margin-bottom:17px}
+.month-card h3{margin:0;font-size:16px}.month-card p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.month-create{margin-top:20px;border:1px dashed var(--line);background:transparent;box-shadow:none}
+.month-create:hover{border-color:var(--primary)}
+.month-create .month-icon{background:var(--surface2)}
+.landing-empty{padding:28px;border:1px dashed var(--line);border-radius:16px;background:var(--surface)}
+.month-current{display:flex;align-items:center;gap:8px}
+.month-current .badge{font-size:12px}
+@media(max-width:720px){.landing{min-height:100vh;padding:28px 14px}.landing-inner{width:100%}.landing-title{font-size:32px}.month-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -94,12 +115,13 @@ button{cursor:pointer}
 <header class="topbar">
   <div class="top-title"><h1 id="pageTitle">Resumen</h1><p id="pageSubtitle">Tu situación financiera de este mes</p></div>
   <div class="top-actions">
-    <div class="month-box"><input id="monthInput" aria-label="Mes" placeholder="AGOSTO 2026"><button class="btn btn-secondary btn-small" onclick="saveMonth()">Guardar</button></div>
+    <div class="month-current"><span class="badge blue" id="currentMonthBadge">Sin mes</span><button class="btn btn-secondary btn-small" onclick="showLanding()">Cambiar mes</button></div>
     <button class="icon-btn" title="Tema" onclick="toggleTheme()">◐</button>
   </div>
 </header>
 
 <section class="content">
+  <div id="view-home" class="view"></div>
   <div id="view-dashboard" class="view active"></div>
   <div id="view-transactions" class="view"></div>
   <div id="view-categories" class="view"></div>
@@ -117,7 +139,7 @@ button{cursor:pointer}
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbz7tPq7V8ygibl9VCS1UwJ04jD_8lJxjNdQMMeBWZ-hZNgh3XE041zEOhhJbCa5_RnO/exec';
-let state = {mes:'',ingresos:[],gastos:[],categorias:[],tarjetas:[],recurrentes:[],presupuestos:{},balance:{},meta:{},resumenMeses:[]};
+let state = {mesId:'',mes:'',ingresos:[],gastos:[],categorias:[],tarjetas:[],recurrentes:[],presupuestos:{},balance:{},meta:{},historial:[]};
 let currentView='dashboard', charts={}, busy=false;
 
 const NAV=[
@@ -136,6 +158,8 @@ function initNav(){
  bottom.innerHTML=NAV.slice(0,5).map(n=>`<button id="bnav-${n.id}" onclick="go('${n.id}')"><span>${n.icon}</span>${n.label}</button>`).join('');
 }
 function go(v){
+ if(v!=='home'&&!state.mesId){showLanding();return}
+ document.body.classList.remove('landing-mode');
  currentView=v;
  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
  document.getElementById('view-'+v).classList.add('active');
@@ -159,8 +183,11 @@ function setBusy(v){busy=v}
 function api(action,params={}){
  return new Promise((resolve,reject)=>{
    if(API.includes('PEGAR_AQUI')) return reject(new Error('Falta configurar la URL del Web App'));
+   const finalParams={...params};
+   const publicActions=new Set(['getMeses','crearMes','renombrarMes','getHistorial','hacerBackup']);
+   if(state.mesId && !publicActions.has(action)) finalParams.mesId=state.mesId;
    const callback='fin_cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-   const q=new URLSearchParams({action,callback,...Object.fromEntries(Object.entries(params).map(([k,v])=>[k,typeof v==='object'?JSON.stringify(v):String(v)]))});
+   const q=new URLSearchParams({action,callback,...Object.fromEntries(Object.entries(finalParams).map(([k,v])=>[k,typeof v==='object'?JSON.stringify(v):String(v)]))});
    const script=document.createElement('script');
    const timer=setTimeout(()=>{cleanup();reject(new Error('Tiempo de espera agotado'))},15000);
    function cleanup(){clearTimeout(timer);delete window[callback];script.remove()}
@@ -170,23 +197,81 @@ function api(action,params={}){
    document.body.appendChild(script);
  });
 }
+
 async function load(){
  try{
-   const d=await api('getDatos');
-   state=d;
-   document.getElementById('monthInput').value=state.mes||'';
+   if(!state.mesId) return showLanding();
+   const [d,history]=await Promise.all([api('getDatos'),api('getHistorial')]);
+   state={...state,...d,historial:history.historial||[]};
+   updateCurrentMonthUI();
    render();
  }catch(e){toast(e.message,'err')}
 }
 async function mutate(action,params={},success='Guardado'){
  try{setBusy(true);await api(action,params);await load();toast(success)}catch(e){toast(e.message,'err')}finally{setBusy(false)}
 }
-async function saveMonth(){const mes=document.getElementById('monthInput').value.trim();if(!mes)return toast('Escribí el mes','err');await mutate('guardarMes',{mes},'Mes guardado')}
+function updateCurrentMonthUI(){
+ const b=document.getElementById('currentMonthBadge');
+ if(b)b.textContent=state.mes||'Sin mes';
+}
+async function showLanding(){
+ currentView='home';
+ document.body.classList.add('landing-mode');
+ document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+ const home=document.getElementById('view-home');home.classList.add('active');
+ try{
+   const d=await api('getMeses');
+   renderLanding(d.meses||[]);
+ }catch(e){renderLanding([]);toast(e.message,'err')}
+}
+function renderLanding(months){
+ const home=document.getElementById('view-home');
+ home.innerHTML=`<div class="landing"><div class="landing-inner">
+   <div class="landing-brand"><div class="brand-mark">₣</div><div><h1 class="landing-title">Finanzas Pro</h1><p class="landing-sub">Elegí el mes con el que querés trabajar.</p></div></div>
+   ${months.length?`<div class="month-grid">${months.map(m=>`<button class="month-card" onclick="selectMonth('${esc(m.id)}')"><span class="month-icon">◷</span><h3>${esc(m.nombre)}</h3><p>Todo lo que cargues queda guardado dentro de este mes.</p></button>`).join('')}
+   <button class="month-card month-create" onclick="openCreateMonth()"><span class="month-icon">+</span><h3>Crear nuevo mes</h3><p>Empezá un período completamente independiente.</p></button></div>`
+   :`<div class="landing-empty"><strong>Todavía no existe ningún mes.</strong><p class="muted">Para empezar, creá tu primer mes. Después, todo lo que cargues quedará guardado dentro de él.</p><button class="btn btn-primary" onclick="openCreateMonth()">+ Crear mi primer mes</button></div>`}
+ </div></div>`;
+}
+async function selectMonth(mesId){
+ try{
+   const months=await api('getMeses');
+   const m=(months.meses||[]).find(x=>x.id===mesId);
+   if(!m)throw new Error('Ese mes ya no existe');
+   state={mesId:m.id,mes:m.nombre,ingresos:[],gastos:[],categorias:[],tarjetas:[],recurrentes:[],presupuestos:{},balance:{},meta:{},historial:[]};
+   localStorage.setItem('fp-last-month',m.id);
+   document.body.classList.remove('landing-mode');
+   updateCurrentMonthUI();
+   go('dashboard');
+   await load();
+ }catch(e){toast(e.message,'err')}
+}
+function openCreateMonth(){
+ openModal('Crear nuevo mes',`<div class="field"><label>Nombre del mes</label><input id="newMonthName" placeholder="Ej.: Agosto 2026" autofocus></div><p class="muted" style="margin:10px 0 0">Este mes tendrá sus propias categorías, tarjetas, presupuestos, movimientos y recurrentes.</p><div class="actions" style="justify-content:flex-end;margin-top:18px"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="createMonth()">Crear mes</button></div>`);
+ setTimeout(()=>document.getElementById('newMonthName')?.focus(),50);
+}
+async function createMonth(){
+ const nombre=document.getElementById('newMonthName')?.value.trim();
+ if(!nombre)return toast('Escribí el nombre del mes','err');
+ try{
+   const d=await api('crearMes',{nombre});
+   closeModal();
+   state={mesId:d.mes.id,mes:d.mes.nombre,ingresos:[],gastos:[],categorias:[],tarjetas:[],recurrentes:[],presupuestos:{},balance:{},meta:{},historial:[]};
+   localStorage.setItem('fp-last-month',d.mes.id);
+   document.body.classList.remove('landing-mode');
+   updateCurrentMonthUI();
+   go('dashboard');
+   await load();
+   toast('Mes creado');
+ }catch(e){toast(e.message,'err')}
+}
+async function changeMonth(){await showLanding()}
+
 async function backup(){try{const d=await api('hacerBackup');if(d.url)window.open(d.url,'_blank');toast('Backup creado')}catch(e){toast(e.message,'err')}}
 function toggleTheme(){const b=document.body;const t=b.dataset.theme==='dark'?'light':'dark';b.dataset.theme=t;localStorage.setItem('fp-theme',t);renderCharts()}
 function initTheme(){document.body.dataset.theme=localStorage.getItem('fp-theme')||'light'}
 
-function render(){renderDashboard();renderTransactions();renderCategories();renderBudgets();renderCards();renderRecurring();renderHistory();if(currentView==='dashboard'||currentView==='budgets'||currentView==='cards')setTimeout(renderCharts,0)}
+function render(){renderDashboard();renderTransactions();renderCategories();renderBudgets();renderCards();renderRecurring();renderHistory();updateCurrentMonthUI();if(currentView==='dashboard'||currentView==='budgets'||currentView==='cards')setTimeout(renderCharts,0)}
 
 function status(){
  const b=state.balance||{};const disponible=Number(b.disponible)||0;
@@ -238,8 +323,10 @@ function renderCards(){document.getElementById('view-cards').innerHTML=`<div cla
 
 function renderRecurring(){document.getElementById('view-recurring').innerHTML=`<div class="toolbar"><div><h2 style="margin:0">Recurrentes</h2><span class="muted">Definiciones que podés generar cada mes.</span></div><button class="btn btn-primary" onclick="openRecurring()">+ Recurrente</button></div><div class="card"><div class="card-body"><div class="card-list">${state.recurrentes.length?state.recurrentes.map(r=>`<div class="list-card"><div class="list-main"><div class="list-title">${esc(r.concepto)} · ${money(r.monto)}</div><div class="list-meta">${r.tipo==='ingreso'?'Ingreso':'Gasto'} · día ${r.dia} · ${esc(r.categoria||'Sin categoría')}</div></div><div class="list-actions"><button class="btn btn-secondary btn-small" onclick="editRecurring('${r.id}')">Editar</button><button class="btn btn-danger btn-small" onclick="remove('eliminarRecurrente',{id:'${r.id}'},'Recurrente eliminado')">Eliminar</button></div></div>`).join(''):'<div class="empty">No tenés movimientos recurrentes.</div>'}</div></div></div>`}
 
-function renderHistory(){document.getElementById('view-history').innerHTML=`<div class="toolbar"><div><h2 style="margin:0">Historial</h2><span class="muted">Resumen de cada mes guardado.</span></div></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th><th>Resultado</th><th></th></tr></thead><tbody>${state.resumenMeses.length?state.resumenMeses.map(m=>`<tr><td><strong>${esc(m.mes)}</strong></td><td class="positive">${money(m.ingresos)}</td><td class="negative">${money(m.gastos)}</td><td class="${m.resultado>=0?'positive':'negative'}">${money(m.resultado)}</td><td><button class="btn btn-secondary btn-small" onclick="loadMonth('${esc(m.mes)}')">Cargar</button></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">Todavía no hay historial.</div></td></tr>'}</tbody></table></div></div>`}
-async function loadMonth(m){await mutate('cambiarMes',{mes:m},'Mes cargado');}
+function renderHistory(){
+ const items=state.historial||[];
+ document.getElementById('view-history').innerHTML=`<div class="toolbar"><div><h2 style="margin:0">Historial</h2><span class="muted">Resumen de todos tus meses.</span></div><button class="btn btn-secondary" onclick="showLanding()">Cambiar mes</button></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th><th>Resultado</th><th></th></tr></thead><tbody>${items.length?items.map(m=>`<tr><td><strong>${esc(m.nombre)}</strong></td><td class="positive">${money(m.ingresos)}</td><td class="negative">${money(m.gastos)}</td><td class="${m.resultado>=0?'positive':'negative'}">${money(m.resultado)}</td><td><button class="btn btn-secondary btn-small" onclick="selectMonth('${esc(m.id)}')">Abrir</button></td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">No hay meses creados.</div></td></tr>'}</tbody></table></div></div>`;
+}
 
 function renderCharts(){
  Object.values(charts).forEach(c=>c?.destroy());charts={};
@@ -284,7 +371,7 @@ function editRecurring(id){openRecurring(state.recurrentes.find(x=>x.id===id))}
 async function submitRecurring(id){const p={id,tipo:document.getElementById('rTipo').value,concepto:document.getElementById('rConcepto').value.trim(),monto:Number(document.getElementById('rMonto').value)||0,dia:Number(document.getElementById('rDia').value)||1,categoria:document.getElementById('rCat').value,pagoPor:document.getElementById('rPago').value};if(!p.concepto||p.monto<=0)return toast('Completá los campos','err');await mutate(id?'actualizarRecurrente':'agregarRecurrente',p,'Recurrente guardado');closeModal()}
 async function remove(action,p,msg){if(!confirm('¿Eliminar este elemento?'))return;await mutate(action,p,msg)}
 
-window.addEventListener('load',async()=>{initTheme();initNav();go('dashboard');await load()});
+window.addEventListener('load',async()=>{initTheme();initNav();await showLanding()});
 </script>
 </body>
 </html>

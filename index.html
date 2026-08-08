@@ -338,6 +338,12 @@ function renderCharts(){
 function openModal(title,html){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=html;document.getElementById('modalBack').classList.add('open')}
 function closeModal(){document.getElementById('modalBack').classList.remove('open')}
 
+// 🔥 SOLUCIÓN AL ERROR: Se agregó la función formatMoney para que no arroje error
+function formatMoney(value) {
+  if (!value) return '';
+  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 function formatMoneyInput(el){
   if(!el)return;
   let v=String(el.value||'').replace(/\s/g,'').replace(/[^0-9,]/g,'');

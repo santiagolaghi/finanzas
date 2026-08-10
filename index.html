@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111827'/%3E%3Cpath d='M18 42V22h8v20h-8Zm10 0V14h8v28h-8Zm10 0V28h8v14h-8Z' fill='white'/%3E%3C/svg%3E">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
@@ -151,6 +152,17 @@ const NAV=[
  {id:'recurring',icon:'↻',label:'Recurrentes'},
  {id:'history',icon:'◷',label:'Historial'}
 ];
+
+
+function toggleUsdAmount(){
+  const currency=document.getElementById('moneda')||document.getElementById('currency')||document.querySelector('select[name="moneda"],select[name="currency"]');
+  const usd=document.getElementById('montoUsd')||document.getElementById('monto_usd')||document.getElementById('amountUsd')||document.querySelector('[name="montoUsd"],[name="monto_usd"],[name="amountUsd"]');
+  if(!usd)return;
+  const field=usd.closest('.field,.form-field,.form-group,.input-group')||usd.parentElement;
+  const show=currency && String(currency.value).toUpperCase()==='USD';
+  if(field) field.style.display=show?'':'none';
+  if(!show) usd.value='';
+}
 
 function initNav(){
  const side=document.getElementById('sideNav'), bottom=document.getElementById('bottomNav');
@@ -419,10 +431,18 @@ function openTransaction(type,data=null){
  <div class="field"><label>Subcategoría</label><select id="fSubcategoria"><option value="">Sin subcategoría</option>${subs.filter(s=>s.categoriaId===x.categoriaId).map(s=>`<option value="${s.id}" ${s.id===x.subcategoriaId?'selected':''}>${esc(s.nombre)}</option>`).join('')}</select></div>
  <div class="field"><label>Tarjeta <span class="muted">(opcional)</span></label><select id="fTarjeta" onchange="toggleCardFields()"><option value="">No es tarjeta</option>${state.tarjetas.map(c=>`<option value="${c.id}" ${c.id===x.tarjetaId?'selected':''}>${esc(c.banco?c.banco+' · ':'')}${esc(c.nombre)}</option>`).join('')}</select></div>
  <div class="field"><label>Pagado por <span class="muted">(opcional)</span></label><select id="fPago"><option value="compartido" ${x.pagoPor==='compartido'?'selected':''}>Compartido</option><option value="yo" ${x.pagoPor==='yo'?'selected':''}>Yo</option><option value="ella" ${x.pagoPor==='ella'?'selected':''}>Mi pareja</option></select></div>
- <div id="cardFields" style="grid-column:1/-1;display:${x.tarjetaId?'block':'none'}"><div class="card" style="margin-top:4px"><div class="card-body"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><strong>Datos de la compra con tarjeta</strong><div class="muted">Todo es opcional. Sirve para proyectar cuotas y saber cuándo terminan.</div></div><span class="badge blue">Tarjeta</span></div><div class="form-grid" style="margin-top:12px"><div class="field"><label>Fecha de compra <span class="muted">(opcional)</span></label><input id="fFechaCompra" type="date" value="${x.fechaCompra||x.fecha||''}"></div><div class="field"><label>¿Es en cuotas?</label><select id="fEsCuotas" onchange="toggleInstallmentFields()"><option value="no" ${x.cuotasTotal>1?'':'selected'}>No</option><option value="si" ${x.cuotasTotal>1?'selected':''}>Sí</option></select></div><div id="installmentFields" style="display:${x.cuotasTotal>1?'contents':'none'}"><div class="field"><label>Total de cuotas <span class="muted">(opcional)</span></label><input id="fCuotasTotal" type="number" min="2" step="1" value="${x.cuotasTotal||''}" placeholder="Ej. 3"></div><div class="field"><label>Cuota actual <span class="muted">(opcional)</span></label><input id="fCuotaActual" type="number" min="1" step="1" value="${x.cuotaActual||''}" placeholder="Ej. 2"></div><div class="field"><label>Monto total de la compra <span class="muted">(opcional)</span></label><div class="money-input"><span class="currency">$</span><input id="fMontoTotal" type="text" inputmode="decimal" value="${x.montoTotal?formatMoney(x.montoTotal):''}" oninput="formatMoneyInput(this)" placeholder="Si lo conocés"></div></div></div><div class="field"><label>Moneda</label><select id="fMoneda"><option value="ARS" ${x.moneda!=='USD'?'selected':''}>Pesos (ARS)</option><option value="USD" ${x.moneda==='USD'?'selected':''}>Dólares (USD)</option></select></div><div class="field"><label>Monto en USD <span class="muted">(opcional)</span></label><input id="fMontoUsd" type="number" min="0" step="0.01" value="${x.montoUsd||''}" placeholder="Ej. 4,56"></div></div></div></div></div>`}
+ <div id="cardFields" style="grid-column:1/-1;display:${x.tarjetaId?'block':'none'}"><div class="card" style="margin-top:4px"><div class="card-body"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><strong>Datos de la compra con tarjeta</strong><div class="muted">Todo es opcional. Sirve para proyectar cuotas y saber cuándo terminan.</div></div><span class="badge blue">Tarjeta</span></div><div class="form-grid" style="margin-top:12px"><div class="field"></div><div class="field"><label>¿Es en cuotas?</label><select id="fEsCuotas" onchange="toggleInstallmentFields()"><option value="no" ${x.cuotasTotal>1?'':'selected'}>No</option><option value="si" ${x.cuotasTotal>1?'selected':''}>Sí</option></select></div><div id="installmentFields" style="display:${x.cuotasTotal>1?'contents':'none'}"><div class="field"><label>Total de cuotas <span class="muted">(opcional)</span></label><input id="fCuotasTotal" type="number" min="2" step="1" value="${x.cuotasTotal||''}" placeholder="Ej. 3"></div><div class="field"><label>Cuota actual <span class="muted">(opcional)</span></label><input id="fCuotaActual" type="number" min="1" step="1" value="${x.cuotaActual||''}" placeholder="Ej. 2"></div><div class="field"><label>Monto total de la compra <span class="muted">(opcional)</span></label><div class="money-input"><span class="currency">$</span><input id="fMontoTotal" type="text" inputmode="decimal" value="${x.montoTotal?formatMoney(x.montoTotal):''}" oninput="formatMoneyInput(this)" placeholder="Si lo conocés"></div></div></div><div class="field"><label>Moneda</label><select id="fMoneda"><option value="ARS" ${x.moneda!=='USD'?'selected':''}>Pesos (ARS)</option><option value="USD" ${x.moneda==='USD'?'selected':''}>Dólares (USD)</option></select></div><div class="field"><label>Monto en USD <span class="muted">(opcional)</span></label><input id="fMontoUsd" type="number" min="0" step="0.01" value="${x.montoUsd||''}" placeholder="Ej. 4,56"></div></div></div></div></div>`}
  <div class="checkbox"><input id="fEstado" type="checkbox" checked><label for="fEstado">${ing?'Cobrado':'Pagado'}</label></div>
  <div class="field" style="grid-column:1/-1"><label>Nota <span class="muted">(opcional)</span></label><textarea id="fNota">${esc(x.nota)}</textarea></div>
  </div><div class="actions" style="justify-content:flex-end;margin-top:18px"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="submitTransaction('${type}','${x.id||''}')">Guardar</button></div>`);
+}
+function refreshSubcategorySelect(){
+ const cat=document.getElementById('fCategoria')?.value||'';
+ const sel=document.getElementById('fSubcategoria');
+ if(!sel)return;
+ const subs=(state.subcategorias||[]).filter(s=>s.categoriaId===cat);
+ sel.innerHTML='<option value="">Sin subcategoría</option>'+subs.map(s=>`<option value="${esc(s.id)}">${esc(s.nombre)}</option>`).join('');
+ sel.value='';
 }
 function toggleCardFields(){const card=document.getElementById('fTarjeta')?.value;const box=document.getElementById('cardFields');if(box)box.style.display=card?'block':'none';if(card&&document.getElementById('fFechaCompra')&&!document.getElementById('fFechaCompra').value)document.getElementById('fFechaCompra').value=document.getElementById('fFecha')?.value||today()}
 function toggleInstallmentFields(){const yes=document.getElementById('fEsCuotas')?.value==='si';const box=document.getElementById('installmentFields');if(box)box.style.display=yes?'contents':'none';if(yes&&document.getElementById('fCuotaActual')&&!document.getElementById('fCuotaActual').value)document.getElementById('fCuotaActual').value='1'}

@@ -260,6 +260,10 @@ async function load(){
    if(!state.mesId) return showLanding();
    const d=await api('getDatos');
    state={...state,...d};
+    ['ingresos','gastos','categorias','subcategorias','tarjetas','recurrentes','deudas','cuentas','objetivos','reservas','reglas','porCobrar','transferencias','cierres','consumosSinAsignar','historial'].forEach(k=>{if(!Array.isArray(state[k]))state[k]=[]});
+    if(!state.presupuestos||typeof state.presupuestos!=='object')state.presupuestos={};
+    if(!state.balance||typeof state.balance!=='object')state.balance={};
+    if(!state.meta||typeof state.meta!=='object')state.meta={};
    if(currentView==='history'){const history=await api('getHistorial');state.historial=history.historial||[];}
    updateCurrentMonthUI();
    render();
@@ -297,7 +301,7 @@ async function selectMonth(mesId){
    let m=monthCache.find(x=>x.id===mesId);
    if(!m){const months=await api('getMeses');monthCache=months.meses||[];m=monthCache.find(x=>x.id===mesId);}
    if(!m)throw new Error('Ese mes ya no existe');
-   state={mesId:m.id,mes:m.nombre,ingresos:[],gastos:[],categorias:[],tarjetas:[],recurrentes:[],deudas:[],presupuestos:{},balance:{},meta:{},historial:[]};
+   state={mesId:m.id,mes:m.nombre,ingresos:[],gastos:[],categorias:[],subcategorias:[],tarjetas:[],recurrentes:[],deudas:[],cuentas:[],objetivos:[],reservas:[],reglas:[],porCobrar:[],transferencias:[],cierres:[],consumosSinAsignar:[],presupuestos:{},balance:{},meta:{},historial:[]};
    localStorage.setItem('fp-last-month',m.id);
    document.body.classList.remove('landing-mode');
    updateCurrentMonthUI();
@@ -315,7 +319,7 @@ async function createMonth(){
  try{
    const d=await api('crearMes',{nombre});
    closeModal();
-   state={mesId:d.mes.id,mes:d.mes.nombre,ingresos:[],gastos:[],categorias:[],tarjetas:[],recurrentes:[],deudas:[],presupuestos:{},balance:{},meta:{},historial:[]};
+   state={mesId:d.mes.id,mes:d.mes.nombre,ingresos:[],gastos:[],categorias:[],subcategorias:[],tarjetas:[],recurrentes:[],deudas:[],cuentas:[],objetivos:[],reservas:[],reglas:[],porCobrar:[],transferencias:[],cierres:[],consumosSinAsignar:[],presupuestos:{},balance:{},meta:{},historial:[]};
    localStorage.setItem('fp-last-month',d.mes.id);
    document.body.classList.remove('landing-mode');
    updateCurrentMonthUI();
@@ -360,9 +364,20 @@ function monthlyExpenseItems(){
  });
  return items
 }
+
+function cardLabelById(id){
+  const cards=Array.isArray(state.tarjetas)?state.tarjetas:[];
+  const c=cards.find(t=>String(t.id)===String(id));
+  if(!c)return '';
+  const banco=String(c.banco||'').trim();
+  const nombre=String(c.nombre||c.concepto||'Tarjeta').trim();
+  const last4=String(c.ultimos4||'').trim();
+  return `${banco?banco+' · ':''}${nombre}${last4?' • '+last4:''}`;
+}
+
 function dashboardMovements(){const expenses=monthlyExpenseItems();let all;if(dashboardFilter.categoriaId){all=expenses.filter(g=>g.categoriaId===dashboardFilter.categoriaId&&(!dashboardFilter.subcategoriaId||g.subcategoriaId===dashboardFilter.subcategoriaId))}else{all=[...state.ingresos.map(x=>({...x,tipo:'ingreso'})),...expenses]}all.sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));return all.slice(0,dashboardFilter.categoriaId?50:10)}
 function dashboardMovementHtml(){const all=dashboardMovements();if(!all.length)return '<div class="empty">No hay movimientos para esta selección.</div>';return `<div class="card-list">${all.map(x=>`<div class="list-card"><div class="list-main"><div class="list-title">${esc(x.concepto)}</div><div class="list-meta">${formatDateDisplay(x.fecha)} · ${x.tipo==='ingreso'?'Ingreso':categoryLabel(x)}${x.tipo==='gasto'?' · '+medioLabel(x):''}${x.source==='resumen'?` · ${esc(x.tarjetaLabel||'Resumen de tarjeta')}`:''}</div></div><strong class="${x.tipo==='ingreso'?'positive':'negative'}">${x.tipo==='ingreso'?'+':'−'}${money(x.monto)}</strong></div>`).join('')}</div>`}
-function renderDashboardMovementList(){const box=document.getElementById('dashboardMovementsBody'),title=document.getElementById('dashboardMovementsTitle'),clear=document.getElementById('dashboardFilterClear');if(box)box.innerHTML=dashboardMovementHtml();const cat=state.categorias.find(c=>c.id===dashboardFilter.categoriaId),sub=state.subcategorias.find(x=>x.id===dashboardFilter.subcategoriaId);if(title)title.textContent=cat?`Movimientos · ${cat.nombre}${sub?' → '+sub.nombre:''}`:'Últimos movimientos';if(clear)clear.style.display=cat?'inline-flex':'none'}
+function renderDashboardMovementList(){const box=document.getElementById('dashboardMovementsBody'),title=document.getElementById('dashboardMovementsTitle'),clear=document.getElementById('dashboardFilterClear');if(box)box.innerHTML=dashboardMovementHtml();const cat=(state.categorias||[]).find(c=>c.id===dashboardFilter.categoriaId),sub=(state.subcategorias||[]).find(x=>x.id===dashboardFilter.subcategoriaId);if(title)title.textContent=cat?`Movimientos · ${cat.nombre}${sub?' → '+sub.nombre:''}`:'Últimos movimientos';if(clear)clear.style.display=cat?'inline-flex':'none'}
 function upcomingPayments(){const items=[];state.tarjetas.forEach(c=>{if(c.vencimiento&&Number(c.resumenActual)>0)items.push({date:c.vencimiento,name:`${c.banco?c.banco+' · ':''}${c.nombre}`,amount:c.resumenActual,type:'Tarjeta'})});state.recurrentes.filter(r=>r.tipo==='gasto').forEach(r=>{const mk=state.meta?.monthKey;if(!mk)return;items.push({date:`${mk}-${String(Math.min(28,Number(r.dia)||1)).padStart(2,'0')}`,name:r.concepto,amount:r.monto,type:r.autoDebito?'Débito automático':'Recurrente'})});items.sort((a,b)=>String(a.date).localeCompare(String(b.date)));return items.slice(0,7)}
 function daysFromToday(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||'')))return null;const a=new Date(today()+'T12:00:00'),b=new Date(String(date).slice(0,10)+'T12:00:00');return Math.round((b-a)/86400000)}
 function financialAlerts(){
@@ -436,7 +451,7 @@ function renderHistory(){const items=state.historial||[];document.getElementById
 
 function renderCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={};const text=getComputedStyle(document.body).getPropertyValue('--muted').trim(),grid=getComputedStyle(document.body).getPropertyValue('--line').trim(),el=document.getElementById('flowChart');if(el){const b=state.balance||{};charts.flow=new Chart(el,{type:'bar',data:{labels:['Ingresos','Gastos directos','Tarjetas a pagar'],datasets:[{data:[b.ingresosCobrados||0,b.gastosPagados||0,b.tarjetas||0],backgroundColor:['#16a34a','#dc2626','#2563eb'],borderRadius:8,maxBarThickness:54}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>money(ctx.raw)}}},scales:{x:{grid:{display:false},ticks:{color:text}},y:{grid:{color:grid},ticks:{color:text},beginAtZero:true}}}})}renderCategoryChart()}
 function categoryTotals(){const map={};monthlyExpenseItems().forEach(g=>{const cat=state.categorias.find(c=>c.id===g.categoriaId);if(!cat)return;map[cat.id]=(map[cat.id]||0)+Number(g.monto||0)});return Object.entries(map).map(([id,total])=>({id,nombre:state.categorias.find(c=>c.id===id)?.nombre||'Sin categoría',total})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total)}
-function subcategoryTotals(catId){const map={};monthlyExpenseItems().filter(g=>g.categoriaId===catId).forEach(g=>{const sub=state.subcategorias.find(s=>s.id===g.subcategoriaId),id=g.subcategoriaId||'__sin__';map[id]=map[id]||{id,nombre:sub?.nombre||'Sin subcategoría',total:0};map[id].total+=Number(g.monto||0)});return Object.values(map).sort((a,b)=>b.total-a.total)}
+function subcategoryTotals(catId){const map={};monthlyExpenseItems().filter(g=>g.categoriaId===catId).forEach(g=>{const sub=(state.subcategorias||[]).find(s=>s.id===g.subcategoriaId),id=g.subcategoriaId||'__sin__';map[id]=map[id]||{id,nombre:sub?.nombre||'Sin subcategoría',total:0};map[id].total+=Number(g.monto||0)});return Object.values(map).sort((a,b)=>b.total-a.total)}
 function chartPalette(n){const base=['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#9333ea','#0f766e'];return Array.from({length:n},(_,i)=>base[i%base.length])}
 
 function renderCategoryChart(){const text=getComputedStyle(document.body).getPropertyValue('--muted').trim(),surfaceColor=getComputedStyle(document.body).getPropertyValue('--surface').trim(),el=document.getElementById('categoryChart');if(!el)return;const root=!window.__categoryDrill,items=root?categoryTotals():subcategoryTotals(window.__categoryDrill),total=items.reduce((a,x)=>a+x.total,0),title=document.getElementById('categoryChartTitle'),sub=document.getElementById('categoryChartSubtitle'),back=document.getElementById('categoryChartBack'),center=document.getElementById('categoryChartTotal'),label=document.getElementById('categoryChartCenterLabel'),badge=document.getElementById('categoryDetailBadge'),list=document.getElementById('categoryDetailList');if(title)title.textContent=root?'Gastos por categoría':`Detalle · ${state.categorias.find(c=>c.id===window.__categoryDrill)?.nombre||'Categoría'}`;if(sub)sub.textContent=root?'Gastos directos + consumos de tarjeta imputados al resumen de este mes.':'Hacé clic en una subcategoría para filtrar los movimientos.';if(back)back.style.display=root?'none':'inline-flex';if(center)center.textContent=money(total);if(label)label.textContent=root?'Total comprado':'Total de la categoría';if(badge)badge.textContent=root?'Por categoría':'Por subcategoría';const colors=chartPalette(items.length);if(list)list.innerHTML=items.length?items.map((x,i)=>`<button class="kpi-row" style="width:100%;border:0;background:none;color:inherit;cursor:pointer" onclick="${root?`window.__categoryDrill='${x.id}';dashboardFilter={categoriaId:'${x.id}',subcategoriaId:''};renderCategoryChart();renderDashboardMovementList()`:`dashboardFilter={categoriaId:'${window.__categoryDrill}',subcategoriaId:'${x.id==='__sin__'?'':x.id}'};renderDashboardMovementList()`}"><span style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:${colors[i]};display:inline-block"></span>${esc(x.nombre)}</span><strong>${money(x.total)}</strong></button>`).join(''):'<div class="empty">Todavía no hay gastos clasificados para mostrar.</div>';if(charts.category)charts.category.destroy();if(!items.length){renderDashboardMovementList();return}charts.category=new Chart(el,{type:'doughnut',data:{labels:items.map(x=>x.nombre),datasets:[{data:items.map(x=>x.total),backgroundColor:colors,borderWidth:3,borderColor:surfaceColor,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:text,usePointStyle:true,padding:14,font:{size:11}}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${money(ctx.raw)}`}}},onClick:(_,elements)=>{if(!elements.length)return;const x=items[elements[0].index];if(root){window.__categoryDrill=x.id;dashboardFilter={categoriaId:x.id,subcategoriaId:''};renderCategoryChart();renderDashboardMovementList()}else{dashboardFilter={categoriaId:window.__categoryDrill,subcategoriaId:x.id==='__sin__'?'':x.id};renderDashboardMovementList()}}}});renderDashboardMovementList()}
@@ -622,7 +637,7 @@ filteredTransactions=function(){let all=[...state.ingresos.map(x=>({...x,tipo:'i
 /* V14.2 — consumo económico separado de caja y obligaciones */
 function economicExpenseItems(){const mk=state.meta?.monthKey||'';return (state.gastos||[]).filter(g=>!g.noConsumo&&dateMonth(g.fechaCompra||g.fecha)===mk).map(g=>({...g,tipo:'gasto',monto:n(g.montoTotal||g.monto)}))}
 categoryTotals=function(){const map={};economicExpenseItems().forEach(g=>{const cat=state.categorias.find(c=>c.id===g.categoriaId);if(!cat)return;map[cat.id]=(map[cat.id]||0)+n(g.monto)});return Object.entries(map).map(([id,total])=>({id,nombre:state.categorias.find(c=>c.id===id)?.nombre||'Sin categoría',total})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total)}
-subcategoryTotals=function(catId){const map={};economicExpenseItems().filter(g=>g.categoriaId===catId).forEach(g=>{const sub=state.subcategorias.find(s=>s.id===g.subcategoriaId),id=g.subcategoriaId||'__sin__';map[id]=map[id]||{id,nombre:sub?.nombre||'Sin subcategoría',total:0};map[id].total+=n(g.monto)});return Object.values(map).sort((a,b)=>b.total-a.total)}
+subcategoryTotals=function(catId){const map={};economicExpenseItems().filter(g=>g.categoriaId===catId).forEach(g=>{const sub=(state.subcategorias||[]).find(s=>s.id===g.subcategoriaId),id=g.subcategoriaId||'__sin__';map[id]=map[id]||{id,nombre:sub?.nombre||'Sin subcategoría',total:0};map[id].total+=n(g.monto)});return Object.values(map).sort((a,b)=>b.total-a.total)}
 dashboardMovements=function(){let all;if(dashboardFilter.categoriaId){all=economicExpenseItems().filter(g=>g.categoriaId===dashboardFilter.categoriaId&&(!dashboardFilter.subcategoriaId||g.subcategoriaId===dashboardFilter.subcategoriaId))}else all=[...state.ingresos.filter(x=>!x.noIngresoEconomico).map(x=>({...x,tipo:'ingreso'})),...economicExpenseItems()];all.sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));return all.slice(0,dashboardFilter.categoriaId?50:10)}
 const __renderDashboardV14=renderDashboard;
 renderDashboard=function(){__renderDashboardV14();const cards=[...document.querySelectorAll('#view-dashboard .stat')];if(cards[0]){const v=cards[0].querySelector('.value'),sub=cards[0].querySelector('.sub');if(v)v.textContent=money(economicExpenseItems().reduce((a,x)=>a+n(x.monto),0));if(sub)sub.textContent='Compras y consumos ocurridos en el mes'}}

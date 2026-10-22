@@ -1,0 +1,15 @@
+{
+  "name": "finanzas-pro",
+  "private": true,
+  "version": "33.3.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "devDependencies": {
+    "acorn": "8.15.0",
+    "playwright": "1.56.1"
+  }
+}
